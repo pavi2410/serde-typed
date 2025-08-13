@@ -1,7 +1,7 @@
-# t-serde
+# serde-typed
 
-[![CI](https://github.com/pavi2410/t-serde/workflows/CI/badge.svg)](https://github.com/pavi2410/t-serde/actions)
-[![npm version](https://badge.fury.io/js/t-serde.svg)](https://badge.fury.io/js/t-serde)
+[![CI](https://github.com/pavi2410/serde-typed/workflows/CI/badge.svg)](https://github.com/pavi2410/serde-typed/actions)
+[![npm version](https://badge.fury.io/js/serde-typed.svg)](https://badge.fury.io/js/serde-typed)
 
 A production-ready TypeScript serialization/deserialization library inspired by Rust's serde. Provides pure structural transformation between types and their serialized forms without validation.
 
@@ -20,19 +20,19 @@ A production-ready TypeScript serialization/deserialization library inspired by 
 
 ```bash
 # npm
-npm install t-serde
+npm install serde-typed
 
 # pnpm
-pnpm add t-serde
+pnpm add serde-typed
 
 # yarn
-yarn add t-serde
+yarn add serde-typed
 ```
 
 ## Quick Start
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 // Define a person serializer
 const PersonSerde = t.ObjectSerde({
@@ -69,7 +69,7 @@ interface Serde<T, S> {
 For runtime safety, use `SafeSerde<T, S>` which returns `Result<T, string>`:
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const result = t.SafeStringSerde.deserialize(123) // not a string
 if (result.ok) {
@@ -84,7 +84,7 @@ if (result.ok) {
 ### Primitive Serializers
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 // Basic types
 t.StringSerde.serialize("hello") // "hello"
@@ -100,7 +100,7 @@ t.DateSerde.deserialize("2023-01-01T00:00:00.000Z") // Date object
 ### Literal Values
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const ConstantSerde = t.Literal("CONSTANT")
 ConstantSerde.serialize("CONSTANT") // "CONSTANT"
@@ -112,7 +112,7 @@ ConstantSerde.deserialize("anything") // "CONSTANT"
 #### Objects
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const PersonSerde = t.ObjectSerde({
   name: t.StringSerde,
@@ -123,7 +123,7 @@ const PersonSerde = t.ObjectSerde({
 #### Arrays
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const NumberArraySerde = t.ArraySerde(t.NumberSerde)
 NumberArraySerde.serialize([1, 2, 3]) // [1, 2, 3]
@@ -132,7 +132,7 @@ NumberArraySerde.serialize([1, 2, 3]) // [1, 2, 3]
 #### Tuples
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const CoordinateSerde = t.Tuple(t.NumberSerde, t.NumberSerde, t.StringSerde)
 CoordinateSerde.serialize([10, 20, "point"]) // [10, 20, "point"]
@@ -141,7 +141,7 @@ CoordinateSerde.serialize([10, 20, "point"]) // [10, 20, "point"]
 #### Records
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const StringRecordSerde = t.Record(t.StringSerde)
 StringRecordSerde.serialize({ key: "value" }) // { key: "value" }
@@ -152,7 +152,7 @@ StringRecordSerde.serialize({ key: "value" }) // { key: "value" }
 #### Optional Fields
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const OptionalString = t.Optional(t.StringSerde)
 OptionalString.serialize(undefined) // undefined
@@ -162,7 +162,7 @@ OptionalString.serialize("hello") // "hello"
 #### Nullable Fields
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const NullableString = t.Nullable(t.StringSerde)
 NullableString.serialize(null) // null
@@ -172,7 +172,7 @@ NullableString.serialize("hello") // "hello"
 #### Default Values
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const NumberWithDefault = t.Default(t.NumberSerde, 0)
 NumberWithDefault.deserialize(undefined) // 0
@@ -184,7 +184,7 @@ NumberWithDefault.deserialize(42) // 42
 Transform data during serialization/deserialization:
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 // Boolean to "True"/"False" string transformation
 const BooleanString = t.Transform(
@@ -204,7 +204,7 @@ BooleanString.deserialize("False") // false
 Handle recursive data structures using `Lazy`:
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 interface TreeNode {
   value: number
@@ -239,7 +239,7 @@ const deserialized = TreeNodeSerde.deserialize(serialized)
 Use safe serializers for runtime validation:
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const SafePersonSerde = t.SafeObjectSerde({
   name: t.SafeStringSerde,
@@ -263,7 +263,7 @@ if (result.ok) {
 For convenience, all serializers are available on the default export:
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const PersonSerde = t.ObjectSerde({
   name: t.StringSerde,
@@ -277,7 +277,7 @@ const PersonSerde = t.ObjectSerde({
 ### Enum Serialization
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 enum Color {
   Red = "red",
@@ -295,7 +295,7 @@ if (result.ok) {
 ### Field Renaming
 
 ```typescript
-import * as t from 't-serde'
+import * as t from 'serde-typed'
 
 const RenamedPersonSerde = t.Rename(
   t.ObjectSerde({ name: t.StringSerde }),
@@ -307,7 +307,7 @@ const RenamedPersonSerde = t.Rename(
 
 ## Browser Support
 
-t-serde targets modern browsers that support:
+serde-typed targets modern browsers that support:
 - ES2022 features
 - ESM modules
 - Node.js 22+ LTS

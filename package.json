@@ -1,6 +1,6 @@
 {
-  "name": "t-serde",
-  "version": "1.0.0",
+  "name": "serde-typed",
+  "version": "0.0.1",
   "description": "Pure TypeScript serialization library inspired by Rust's serde",
   "keywords": [
     "typescript",
@@ -54,12 +54,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pavi2410/t-serde"
+    "url": "https://github.com/pavi2410/serde-typed"
   },
   "bugs": {
-    "url": "https://github.com/pavi2410/t-serde/issues"
+    "url": "https://github.com/pavi2410/serde-typed/issues"
   },
-  "homepage": "https://github.com/pavi2410/t-serde#readme",
+  "homepage": "https://github.com/pavi2410/serde-typed#readme",
   "author": "Your Name",
   "license": "MIT"
 }
