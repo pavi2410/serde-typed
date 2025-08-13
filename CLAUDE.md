@@ -35,7 +35,7 @@ The library will be organized into modular components:
 
 - `src/types/` - Core interfaces (Result, Serde, SafeSerde)  
 - `src/serializers/primitives.ts` - String, Number, Boolean, Date, Literal, Enum serializers
-- `src/serializers/complex.ts` - Struct, Array, Tuple, Union, Record serializers
+- `src/serializers/complex.ts` - Object, Array, Tuple, Union, Record serializers
 - `src/serializers/modifiers.ts` - Optional, Nullable, Default, Mapped, Lazy serializers
 - `src/index.ts` - Main exports and factory object
 

@@ -4,9 +4,11 @@ import { resolve } from 'path'
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        safe: resolve(__dirname, 'src/safe.ts')
+      },
       name: 'TsSerde',
-      fileName: 'index',
       formats: ['es']
     },
     minify: 'terser',
