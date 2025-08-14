@@ -35,10 +35,10 @@ yarn add serde-typed
 import * as t from 'serde-typed'
 
 // Define a person serializer
-const PersonSerde = t.ObjectSerde({
-  name: t.StringSerde,
-  age: t.NumberSerde,
-  active: t.BooleanSerde
+const PersonSerde = t.object({
+  name: t.string,
+  age: t.number,
+  active: t.boolean
 })
 
 // Serialize data
@@ -69,9 +69,9 @@ interface Serde<T, S> {
 For runtime safety, use `SafeSerde<T, S>` which returns `Result<T, string>`:
 
 ```typescript
-import * as t from 'serde-typed'
+import * as safe from 'serde-typed/safe'
 
-const result = t.SafeStringSerde.deserialize(123) // not a string
+const result = safe.string.deserialize(123) // not a string
 if (result.ok) {
   console.log(result.value) // string
 } else {
@@ -87,14 +87,14 @@ if (result.ok) {
 import * as t from 'serde-typed'
 
 // Basic types
-t.StringSerde.serialize("hello") // "hello"
-t.NumberSerde.serialize(42) // 42
-t.BooleanSerde.serialize(true) // true
+t.string.serialize("hello") // "hello"
+t.number.serialize(42) // 42
+t.boolean.serialize(true) // true
 
 // Date serialization (to/from ISO string)
 const date = new Date("2023-01-01T00:00:00.000Z")
-t.DateSerde.serialize(date) // "2023-01-01T00:00:00.000Z"
-t.DateSerde.deserialize("2023-01-01T00:00:00.000Z") // Date object
+t.date.serialize(date) // "2023-01-01T00:00:00.000Z"
+t.date.deserialize("2023-01-01T00:00:00.000Z") // Date object
 ```
 
 ### Literal Values
@@ -102,7 +102,7 @@ t.DateSerde.deserialize("2023-01-01T00:00:00.000Z") // Date object
 ```typescript
 import * as t from 'serde-typed'
 
-const ConstantSerde = t.Literal("CONSTANT")
+const ConstantSerde = t.literal("CONSTANT")
 ConstantSerde.serialize("CONSTANT") // "CONSTANT"
 ConstantSerde.deserialize("anything") // "CONSTANT"
 ```
@@ -114,9 +114,9 @@ ConstantSerde.deserialize("anything") // "CONSTANT"
 ```typescript
 import * as t from 'serde-typed'
 
-const PersonSerde = t.ObjectSerde({
-  name: t.StringSerde,
-  age: t.NumberSerde
+const PersonSerde = t.object({
+  name: t.string,
+  age: t.number
 })
 ```
 
@@ -125,7 +125,7 @@ const PersonSerde = t.ObjectSerde({
 ```typescript
 import * as t from 'serde-typed'
 
-const NumberArraySerde = t.ArraySerde(t.NumberSerde)
+const NumberArraySerde = t.array(t.number)
 NumberArraySerde.serialize([1, 2, 3]) // [1, 2, 3]
 ```
 
@@ -134,7 +134,7 @@ NumberArraySerde.serialize([1, 2, 3]) // [1, 2, 3]
 ```typescript
 import * as t from 'serde-typed'
 
-const CoordinateSerde = t.Tuple(t.NumberSerde, t.NumberSerde, t.StringSerde)
+const CoordinateSerde = t.tuple(t.number, t.number, t.string)
 CoordinateSerde.serialize([10, 20, "point"]) // [10, 20, "point"]
 ```
 
@@ -143,7 +143,7 @@ CoordinateSerde.serialize([10, 20, "point"]) // [10, 20, "point"]
 ```typescript
 import * as t from 'serde-typed'
 
-const StringRecordSerde = t.Record(t.StringSerde)
+const StringRecordSerde = t.record(t.string)
 StringRecordSerde.serialize({ key: "value" }) // { key: "value" }
 ```
 
@@ -154,7 +154,7 @@ StringRecordSerde.serialize({ key: "value" }) // { key: "value" }
 ```typescript
 import * as t from 'serde-typed'
 
-const OptionalString = t.Optional(t.StringSerde)
+const OptionalString = t.optional(t.string)
 OptionalString.serialize(undefined) // undefined
 OptionalString.serialize("hello") // "hello"
 ```
@@ -164,7 +164,7 @@ OptionalString.serialize("hello") // "hello"
 ```typescript
 import * as t from 'serde-typed'
 
-const NullableString = t.Nullable(t.StringSerde)
+const NullableString = t.nullable(t.string)
 NullableString.serialize(null) // null
 NullableString.serialize("hello") // "hello"
 ```
@@ -174,7 +174,7 @@ NullableString.serialize("hello") // "hello"
 ```typescript
 import * as t from 'serde-typed'
 
-const NumberWithDefault = t.Default(t.NumberSerde, 0)
+const NumberWithDefault = t.withDefault(t.number, 0)
 NumberWithDefault.deserialize(undefined) // 0
 NumberWithDefault.deserialize(42) // 42
 ```
@@ -184,14 +184,17 @@ NumberWithDefault.deserialize(42) // 42
 Transform data during serialization/deserialization:
 
 ```typescript
+import { createTransformSerde } from 'serde-typed/serializers/primitives'
 import * as t from 'serde-typed'
+import * as safe from 'serde-typed/safe'
 
 // Boolean to "True"/"False" string transformation
-const BooleanString = t.Transform(
-  t.StringSerde,
+const BooleanString = createTransformSerde(
+  { throwing: t.string, safe: safe.string },
   (value: boolean) => value ? "True" : "False",
-  (serialized: string) => serialized === "True"
-)
+  (serialized: string) => serialized === "True",
+  (serialized: string) => ({ ok: true, value: serialized === "True" })
+).throwing
 
 BooleanString.serialize(true) // "True"
 BooleanString.serialize(false) // "False"
@@ -212,10 +215,10 @@ interface TreeNode {
   children?: TreeNode[]
 }
 
-const TreeNodeSerde = t.Lazy(() => t.ObjectSerde({
-  value: t.NumberSerde,
-  name: t.StringSerde,
-  children: t.Optional(t.ArraySerde(TreeNodeSerde))
+const TreeNodeSerde = t.lazy(() => t.object({
+  value: t.number,
+  name: t.string,
+  children: t.optional(t.array(TreeNodeSerde))
 }))
 
 // Now you can serialize/deserialize tree structures
@@ -239,11 +242,11 @@ const deserialized = TreeNodeSerde.deserialize(serialized)
 Use safe serializers for runtime validation:
 
 ```typescript
-import * as t from 'serde-typed'
+import * as safe from 'serde-typed/safe'
 
-const SafePersonSerde = t.SafeObjectSerde({
-  name: t.SafeStringSerde,
-  age: t.SafeNumberSerde
+const SafePersonSerde = safe.object({
+  name: safe.string,
+  age: safe.number
 })
 
 const result = SafePersonSerde.deserialize({
@@ -265,10 +268,10 @@ For convenience, all serializers are available on the default export:
 ```typescript
 import * as t from 'serde-typed'
 
-const PersonSerde = t.ObjectSerde({
-  name: t.StringSerde,
-  age: t.NumberSerde,
-  active: t.BooleanSerde
+const PersonSerde = t.object({
+  name: t.string,
+  age: t.number,
+  active: t.boolean
 })
 ```
 
@@ -277,7 +280,7 @@ const PersonSerde = t.ObjectSerde({
 ### Enum Serialization
 
 ```typescript
-import * as t from 'serde-typed'
+import * as safe from 'serde-typed/safe'
 
 enum Color {
   Red = "red",
@@ -285,7 +288,7 @@ enum Color {
   Blue = "blue"
 }
 
-const ColorSerde = t.SafeEnum(Color)
+const ColorSerde = safe.enumSerde(Color)
 const result = ColorSerde.deserialize("red")
 if (result.ok) {
   console.log(result.value) // "red" (properly typed as Color)
@@ -297,8 +300,8 @@ if (result.ok) {
 ```typescript
 import * as t from 'serde-typed'
 
-const RenamedPersonSerde = t.Rename(
-  t.ObjectSerde({ name: t.StringSerde }),
+const RenamedPersonSerde = t.rename(
+  t.object({ name: t.string }),
   { name: "full_name" }
 )
 

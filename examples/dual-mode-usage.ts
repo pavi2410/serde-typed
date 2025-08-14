@@ -3,7 +3,7 @@
 // Throwing mode - import from main entry point
 import * as t from "../src/index.js";
 
-// Safe mode - import from safe entry point  
+// Safe mode - import from safe entry point
 import * as safe from "../src/safe.js";
 
 interface User {
@@ -15,7 +15,7 @@ interface User {
 
 // Define schema once, use in both modes
 const userFields = {
-  name: t.string,  // or safe.string - both have same API
+  name: t.string, // or safe.string - both have same API
   age: t.number,
   email: t.optional(t.string),
   active: t.boolean,
@@ -24,10 +24,10 @@ const userFields = {
 // Throwing mode
 const ThrowingUserSerde = t.object(userFields);
 
-// Safe mode 
+// Safe mode
 const SafeUserSerde = safe.object({
   name: safe.string,
-  age: safe.number, 
+  age: safe.number,
   email: safe.optional(safe.string),
   active: safe.boolean,
 });
@@ -39,12 +39,16 @@ console.log("=== Throwing Mode ===");
 try {
   const serialized = ThrowingUserSerde.serialize(userData);
   console.log("Serialized:", serialized);
-  
+
   const deserialized = ThrowingUserSerde.deserialize(serialized);
   console.log("Deserialized:", deserialized);
-  
+
   // This will throw
-  ThrowingUserSerde.deserialize({ name: "Bob", age: "not a number", active: true });
+  ThrowingUserSerde.deserialize({
+    name: "Bob",
+    age: "not a number",
+    active: true,
+  });
 } catch (error) {
   console.log("Error caught:", error.message);
 }
@@ -62,7 +66,11 @@ if (result1.ok) {
 }
 
 // This will return an error result
-const result2 = SafeUserSerde.deserialize({ name: "Bob", age: "not a number", active: true });
+const result2 = SafeUserSerde.deserialize({
+  name: "Bob",
+  age: "not a number",
+  active: true,
+});
 if (result2.ok) {
   console.log("Deserialized:", result2.value);
 } else {
@@ -94,9 +102,9 @@ const companyData = {
   name: "TechCorp",
   employees: [
     { name: "Alice", age: 30, active: true },
-    { name: "Bob", age: 25, active: false, email: "bob@example.com" }
+    { name: "Bob", age: 25, active: false, email: "bob@example.com" },
   ],
-  founded: new Date("2020-01-01")
+  founded: new Date("2020-01-01"),
 };
 
 console.log("\n=== Complex Nested Example ===");
@@ -104,8 +112,11 @@ console.log("\n=== Complex Nested Example ===");
 // Throwing mode
 try {
   const serialized = ThrowingCompanySerde.serialize(companyData);
-  console.log("Throwing mode serialized company:", JSON.stringify(serialized, null, 2));
-  
+  console.log(
+    "Throwing mode serialized company:",
+    JSON.stringify(serialized, null, 2),
+  );
+
   const deserialized = ThrowingCompanySerde.deserialize(serialized);
   console.log("Throwing mode deserialized company:", deserialized);
 } catch (error) {
@@ -114,7 +125,7 @@ try {
 
 // Safe mode
 const safeResult = SafeCompanySerde.deserialize(
-  SafeCompanySerde.serialize(companyData)
+  SafeCompanySerde.serialize(companyData),
 );
 
 if (safeResult.ok) {

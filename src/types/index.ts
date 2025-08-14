@@ -1,14 +1,14 @@
 import type { Result } from "@/utils/result.js";
 
-export interface Serde<T, S> {
+export type Serde<T, S> = {
   serialize(value: T): S;
-  deserialize(serialized: S): T;
-}
+  deserialize(serialized: unknown): T;
+};
 
-export interface SafeSerde<T, S> {
+export type SafeSerde<T, S> = {
   serialize(value: T): S;
-  deserialize(serialized: S): Result<T, string>;
-}
+  deserialize(serialized: unknown): Result<T, string>;
+};
 
 export type SerdeFunction<T, S> = (value: T) => S;
 export type DeserdeFunction<T, S> = (serialized: S) => T;

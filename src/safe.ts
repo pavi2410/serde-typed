@@ -1,172 +1,139 @@
-export type { SafeSerializer } from "@/types/api.js";
+export type { SafeSerde } from "@/types/index.js";
 export type { Result } from "@/utils/result.js";
 
 import {
-  createArraySerializer,
-  createObjectSerializer,
-  createRecordSerializer,
-  createTupleSerializer,
-  createUnionSerializer,
+  createArraySerde,
+  createObjectSerde,
+  createRecordSerde,
+  createTupleSerde,
+  createUnionSerde,
 } from "@/serializers/complex.js";
+import { createSerde } from "@/serializers/index.js";
 import {
-  createDefaultSerializer,
-  createLazySerializer,
-  createMappedSerializer,
-  createNullableSerializer,
-  createOptionalSerializer,
-  createRenameSerializer,
+  createDefaultSerde,
+  createLazySerde,
+  createMappedSerde,
+  createNullableSerde,
+  createOptionalSerde,
+  createRenameSerde,
 } from "@/serializers/modifiers.js";
 import {
-  createBooleanSerializer,
-  createDateSerializer,
-  createEnumSerializer,
-  createLiteralSerializer,
-  createNumberSerializer,
-  createStringSerializer,
+  createBooleanSerde,
+  createDateSerde,
+  createEnumSerde,
+  createLiteralSerde,
+  createNumberSerde,
+  createStringSerde,
 } from "@/serializers/primitives.js";
-import type { SafeSerializer } from "@/types/api.js";
-import { wrapThrowingFunction } from "@/utils/result.js";
+import type { SafeSerde } from "@/types/index.js";
 
 // Safe mode exports - same names but returning Result<T, string> for deserialize
-export const string: SafeSerializer<string, string> =
-  createStringSerializer().safe;
-export const number: SafeSerializer<number, number> =
-  createNumberSerializer().safe;
-export const boolean: SafeSerializer<boolean, boolean> =
-  createBooleanSerializer().safe;
-export const date: SafeSerializer<Date, string> = createDateSerializer().safe;
+export const string: SafeSerde<string, string> = createStringSerde().safe;
+export const number: SafeSerde<number, number> = createNumberSerde().safe;
+export const boolean: SafeSerde<boolean, boolean> = createBooleanSerde().safe;
+export const date: SafeSerde<Date, string> = createDateSerde().safe;
 
 export const literal = <T extends string | number | boolean>(
   literal: T,
-): SafeSerializer<T, T> => createLiteralSerializer(literal).safe;
+): SafeSerde<T, T> => createLiteralSerde(literal).safe;
 
-export const enumSerializer = <T extends Record<string, string | number>>(
+export const enumSerde = <T extends Record<string, string | number>>(
   enumObject: T,
-): SafeSerializer<T[keyof T], T[keyof T]> =>
-  createEnumSerializer(enumObject).safe;
+): SafeSerde<T[keyof T], T[keyof T]> => createEnumSerde(enumObject).safe;
 
 // Helper to create dual-mode serializers that we can use internally
-type DualSerializer<T, S> = {
-  throwing: { serialize: (v: T) => S; deserialize: (s: unknown) => T };
-  safe: SafeSerializer<T, S>;
-};
-
-// Helper function to convert safe serializer to dual serializer
-const makeDual = <T, S>(serde: SafeSerializer<T, S>): DualSerializer<T, S> => ({
-  throwing: {
-    serialize: serde.serialize,
-    deserialize: (s: unknown) => {
-      const result = serde.deserialize(s);
-      if (result.ok) return result.value;
-      throw new Error(result.error);
-    },
-  },
-  safe: serde,
-});
+type DualSerde<T, S> = ReturnType<typeof createSerde<T, S>>;
 
 export const object = <T extends Record<string, unknown>>(
-  fields: { [K in keyof T]: SafeSerializer<T[K], unknown> },
-): SafeSerializer<T, Record<string, unknown>> => {
-  const fieldSerdes: { [K in keyof T]: DualSerializer<T[K], unknown> } =
-    {} as never;
+  fields: { [K in keyof T]: SafeSerde<T[K], unknown> },
+): SafeSerde<T, Record<string, unknown>> => {
+  const fieldSerdes: { [K in keyof T]: DualSerde<T[K], unknown> } = {} as never;
   for (const key in fields) {
-    fieldSerdes[key] = makeDual(fields[key]) as never;
+    fieldSerdes[key] = createSerde(fields[key]) as never;
   }
-  return createObjectSerializer(fieldSerdes).safe as SafeSerializer<
+  return createObjectSerde(fieldSerdes).safe as SafeSerde<
     T,
     Record<string, unknown>
   >;
 };
 
 export const array = <T>(
-  itemSerde: SafeSerializer<T, unknown>,
-): SafeSerializer<T[], unknown[]> =>
-  createArraySerializer(makeDual(itemSerde)).safe as SafeSerializer<
-    T[],
-    unknown[]
-  >;
+  itemSerde: SafeSerde<T, unknown>,
+): SafeSerde<T[], unknown[]> =>
+  createArraySerde(createSerde(itemSerde)).safe as SafeSerde<T[], unknown[]>;
 
 export const tuple = <T extends readonly unknown[]>(
-  ...serdes: { [K in keyof T]: SafeSerializer<T[K], unknown> }
-): SafeSerializer<T, unknown[]> => {
-  const dualSerdes = serdes.map((serde) => makeDual(serde)) as never;
-  return createTupleSerializer(...dualSerdes).safe as SafeSerializer<
-    T,
-    unknown[]
-  >;
+  ...serdes: { [K in keyof T]: SafeSerde<T[K], unknown> }
+): SafeSerde<T, unknown[]> => {
+  const dualSerdes = serdes.map((serde) => createSerde(serde)) as never;
+  return createTupleSerde(...dualSerdes).safe as SafeSerde<T, unknown[]>;
 };
 
 export const union = <T extends Record<string, unknown>>(
-  variants: { [K in keyof T]: SafeSerializer<T[K], unknown> },
+  variants: { [K in keyof T]: SafeSerde<T[K], unknown> },
   tagExtractor: (value: T[keyof T]) => keyof T,
   tagField: string = "type",
-): SafeSerializer<T[keyof T], unknown> => {
-  const dualVariants: { [K in keyof T]: DualSerializer<T[K], unknown> } =
+): SafeSerde<T[keyof T], unknown> => {
+  const dualVariants: { [K in keyof T]: DualSerde<T[K], unknown> } =
     {} as never;
   for (const key in variants) {
-    dualVariants[key] = makeDual(variants[key]) as never;
+    dualVariants[key] = createSerde(variants[key]) as never;
   }
-  return createUnionSerializer(dualVariants as never, tagExtractor, tagField)
-    .safe as SafeSerializer<T[keyof T], unknown>;
+  return createUnionSerde(dualVariants as never, tagExtractor, tagField)
+    .safe as SafeSerde<T[keyof T], unknown>;
 };
 
 export const record = <T>(
-  valueSerde: SafeSerializer<T, unknown>,
-): SafeSerializer<Record<string, T>, Record<string, unknown>> =>
-  createRecordSerializer(makeDual(valueSerde)).safe as SafeSerializer<
+  valueSerde: SafeSerde<T, unknown>,
+): SafeSerde<Record<string, T>, Record<string, unknown>> =>
+  createRecordSerde(createSerde(valueSerde)).safe as SafeSerde<
     Record<string, T>,
     Record<string, unknown>
   >;
 
 export const optional = <T>(
-  serde: SafeSerializer<T, unknown>,
-): SafeSerializer<T | undefined, unknown> =>
-  createOptionalSerializer(makeDual(serde)).safe as SafeSerializer<
+  serde: SafeSerde<T, unknown>,
+): SafeSerde<T | undefined, unknown> =>
+  createOptionalSerde(createSerde(serde)).safe as SafeSerde<
     T | undefined,
     unknown
   >;
 
 export const nullable = <T>(
-  serde: SafeSerializer<T, unknown>,
-): SafeSerializer<T | null, unknown> =>
-  createNullableSerializer(makeDual(serde)).safe as SafeSerializer<
-    T | null,
-    unknown
-  >;
+  serde: SafeSerde<T, unknown>,
+): SafeSerde<T | null, unknown> =>
+  createNullableSerde(createSerde(serde)).safe as SafeSerde<T | null, unknown>;
 
 export const withDefault = <T>(
-  serde: SafeSerializer<T, unknown>,
+  serde: SafeSerde<T, unknown>,
   defaultValue: T,
-): SafeSerializer<T, unknown> =>
-  createDefaultSerializer(makeDual(serde), defaultValue).safe as SafeSerializer<
+): SafeSerde<T, unknown> =>
+  createDefaultSerde(createSerde(serde), defaultValue).safe as SafeSerde<
     T,
     unknown
   >;
 
 export const mapped = <T, K extends keyof T>(
-  serde: SafeSerializer<T, unknown>,
+  serde: SafeSerde<T, unknown>,
   mapping: Record<string, K>,
-): SafeSerializer<T, Record<string, unknown>> =>
-  createMappedSerializer(makeDual(serde), mapping).safe as SafeSerializer<
+): SafeSerde<T, Record<string, unknown>> =>
+  createMappedSerde(createSerde(serde), mapping).safe as SafeSerde<
     T,
     Record<string, unknown>
   >;
 
 export const lazy = <T>(
-  getSerdeFactory: () => SafeSerializer<T, unknown>,
-): SafeSerializer<T, unknown> => {
-  const getDualSerdeFactory = () => makeDual(getSerdeFactory());
-  return createLazySerializer(getDualSerdeFactory).safe as SafeSerializer<
-    T,
-    unknown
-  >;
+  getSerdeFactory: () => SafeSerde<T, unknown>,
+): SafeSerde<T, unknown> => {
+  const getDualSerdeFactory = () => createSerde(getSerdeFactory());
+  return createLazySerde(getDualSerdeFactory).safe as SafeSerde<T, unknown>;
 };
 
 export const rename = <T, K extends keyof T>(
-  serde: SafeSerializer<T, unknown>,
+  serde: SafeSerde<T, unknown>,
   fieldMapping: Partial<Record<K, string>>,
-): SafeSerializer<T, unknown> =>
-  createRenameSerializer(makeDual(serde), fieldMapping).safe as SafeSerializer<
+): SafeSerde<T, unknown> =>
+  createRenameSerde(createSerde(serde), fieldMapping).safe as SafeSerde<
     T,
     unknown
   >;

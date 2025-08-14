@@ -1,27 +1,9 @@
+import { createSerde } from "@/serializers/index.js";
+import type { SafeSerde, Serde } from "@/types/index.js";
 import type { Result } from "@/utils/result.js";
 import { Err, Ok } from "@/utils/result.js";
 
-interface ThrowingSerde<T, S> {
-  serialize: (value: T) => S;
-  deserialize: (serialized: unknown) => T;
-}
-
-interface SafeSerde<T, S> {
-  serialize: (value: T) => S;
-  deserialize: (serialized: unknown) => Result<T, string>;
-}
-
-export const createStringSerializer = () => {
-  const throwing: ThrowingSerde<string, string> = {
-    serialize: (value) => value,
-    deserialize: (serialized) => {
-      if (typeof serialized !== "string") {
-        throw new Error(`Expected string, got ${typeof serialized}`);
-      }
-      return serialized;
-    },
-  };
-
+export const createStringSerde = () => {
   const safe: SafeSerde<string, string> = {
     serialize: (value) => value,
     deserialize: (serialized) =>
@@ -30,20 +12,10 @@ export const createStringSerializer = () => {
         : Err(`Expected string, got ${typeof serialized}`),
   };
 
-  return { throwing, safe };
+  return createSerde(safe);
 };
 
-export const createNumberSerializer = () => {
-  const throwing: ThrowingSerde<number, number> = {
-    serialize: (value) => value,
-    deserialize: (serialized) => {
-      if (typeof serialized !== "number") {
-        throw new Error(`Expected number, got ${typeof serialized}`);
-      }
-      return serialized;
-    },
-  };
-
+export const createNumberSerde = () => {
   const safe: SafeSerde<number, number> = {
     serialize: (value) => value,
     deserialize: (serialized) =>
@@ -52,20 +24,10 @@ export const createNumberSerializer = () => {
         : Err(`Expected number, got ${typeof serialized}`),
   };
 
-  return { throwing, safe };
+  return createSerde(safe);
 };
 
-export const createBooleanSerializer = () => {
-  const throwing: ThrowingSerde<boolean, boolean> = {
-    serialize: (value) => value,
-    deserialize: (serialized) => {
-      if (typeof serialized !== "boolean") {
-        throw new Error(`Expected boolean, got ${typeof serialized}`);
-      }
-      return serialized;
-    },
-  };
-
+export const createBooleanSerde = () => {
   const safe: SafeSerde<boolean, boolean> = {
     serialize: (value) => value,
     deserialize: (serialized) =>
@@ -74,24 +36,10 @@ export const createBooleanSerializer = () => {
         : Err(`Expected boolean, got ${typeof serialized}`),
   };
 
-  return { throwing, safe };
+  return createSerde(safe);
 };
 
-export const createDateSerializer = () => {
-  const throwing: ThrowingSerde<Date, string> = {
-    serialize: (value) => value.toISOString(),
-    deserialize: (serialized) => {
-      if (typeof serialized !== "string") {
-        throw new Error(`Expected string for date, got ${typeof serialized}`);
-      }
-      const dateObj = new Date(serialized);
-      if (Number.isNaN(dateObj.getTime())) {
-        throw new Error(`Invalid date string: ${serialized}`);
-      }
-      return dateObj;
-    },
-  };
-
+export const createDateSerde = () => {
   const safe: SafeSerde<Date, string> = {
     serialize: (value) => value.toISOString(),
     deserialize: (serialized) => {
@@ -105,22 +53,12 @@ export const createDateSerializer = () => {
     },
   };
 
-  return { throwing, safe };
+  return createSerde(safe);
 };
 
-export function createLiteralSerializer<T extends string | number | boolean>(
+export function createLiteralSerde<T extends string | number | boolean>(
   literal: T,
 ) {
-  const throwing: ThrowingSerde<T, T> = {
-    serialize: () => literal,
-    deserialize: (serialized) => {
-      if (serialized !== literal) {
-        throw new Error(`Expected literal ${literal}, got ${serialized}`);
-      }
-      return literal;
-    },
-  };
-
   const safe: SafeSerde<T, T> = {
     serialize: () => literal,
     deserialize: (serialized) =>
@@ -129,25 +67,13 @@ export function createLiteralSerializer<T extends string | number | boolean>(
         : Err(`Expected literal ${literal}, got ${serialized}`),
   };
 
-  return { throwing, safe };
+  return createSerde(safe);
 }
 
-export function createEnumSerializer<T extends Record<string, string | number>>(
+export function createEnumSerde<T extends Record<string, string | number>>(
   enumObject: T,
 ) {
   const validValues = Object.values(enumObject);
-
-  const throwing: ThrowingSerde<T[keyof T], T[keyof T]> = {
-    serialize: (value) => value,
-    deserialize: (serialized) => {
-      if (!validValues.includes(serialized as T[keyof T])) {
-        throw new Error(
-          `Invalid enum value: ${serialized}. Expected one of: ${validValues.join(", ")}`,
-        );
-      }
-      return serialized as T[keyof T];
-    },
-  };
 
   const safe: SafeSerde<T[keyof T], T[keyof T]> = {
     serialize: (value) => value,
@@ -159,30 +85,24 @@ export function createEnumSerializer<T extends Record<string, string | number>>(
           ),
   };
 
-  return { throwing, safe };
+  return createSerde(safe);
 }
 
-export function createTransformSerializer<T, S, U>(
-  baseSerde: { throwing: ThrowingSerde<T, S>; safe: SafeSerde<T, S> },
+export function createTransformSerde<T, S, U>(
+  baseSerde: { throwing: Serde<T, S>; safe: SafeSerde<T, S> },
   serializeTransform: (value: U) => T,
-  deserializeTransform: (value: T) => U,
+  _deserializeTransform: (value: T) => U,
   safeDeserializeTransform: (value: T) => Result<U, string>,
 ) {
-  const throwing: ThrowingSerde<U, S> = {
-    serialize: (value) =>
-      baseSerde.throwing.serialize(serializeTransform(value)),
-    deserialize: (serialized) =>
-      deserializeTransform(baseSerde.throwing.deserialize(serialized)),
-  };
-
   const safe: SafeSerde<U, S> = {
-    serialize: (value) => baseSerde.safe.serialize(serializeTransform(value)),
-    deserialize: (serialized) => {
+    serialize: (value: U) =>
+      baseSerde.safe.serialize(serializeTransform(value)),
+    deserialize: (serialized: unknown) => {
       const result = baseSerde.safe.deserialize(serialized);
       if (!result.ok) return result;
       return safeDeserializeTransform(result.value);
     },
   };
 
-  return { throwing, safe };
+  return createSerde(safe);
 }
