@@ -1,5 +1,5 @@
 {
-  "name": "serde-typed",
+  "name": "@rustify/serde",
   "version": "0.0.1",
   "description": "Pure TypeScript serialization library inspired by Rust's serde",
   "keywords": [
@@ -54,12 +54,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pavi2410/serde-typed"
+    "url": "https://github.com/rustify-ts/serde"
   },
   "bugs": {
-    "url": "https://github.com/pavi2410/serde-typed/issues"
+    "url": "https://github.com/rustify-ts/serde/issues"
   },
-  "homepage": "https://github.com/pavi2410/serde-typed#readme",
+  "homepage": "https://github.com/rustify-ts/serde#readme",
   "author": "Your Name",
   "license": "MIT"
 }

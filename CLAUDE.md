@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is `serde-typed` - a production-ready TypeScript serialization/deserialization library inspired by Rust's serde. The library provides pure structural transformation between types and their serialized forms without validation.
+This is `@rustify/serde` - a production-ready TypeScript serialization/deserialization library inspired by Rust's serde. The library provides pure structural transformation between types and their serialized forms without validation.
 
 ## Package Manager & Environment
 
