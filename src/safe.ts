@@ -1,5 +1,5 @@
-export type { SafeSerde } from "@/types/index.js";
 export type { Result } from "@rustify/result";
+export type { SafeSerde } from "@/types/index.js";
 
 import {
   createArraySerde,

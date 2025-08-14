@@ -1,6 +1,6 @@
+import { Err, Ok } from "@rustify/result";
 import { createSerde } from "@/serializers/index.js";
 import type { SafeSerde, Serde } from "@/types/index.js";
-import { Err, Ok } from "@rustify/result";
 
 export function createObjectSerde<T extends Record<string, any>>(
   fields: {

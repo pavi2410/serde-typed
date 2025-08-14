@@ -1,7 +1,7 @@
-import { createSerde } from "@/serializers/index.js";
-import type { SafeSerde, Serde } from "@/types/index.js";
 import type { Result } from "@rustify/result";
 import { Err, Ok } from "@rustify/result";
+import { createSerde } from "@/serializers/index.js";
+import type { SafeSerde, Serde } from "@/types/index.js";
 
 export const createStringSerde = () => {
   const safe: SafeSerde<string, string> = {

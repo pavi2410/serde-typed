@@ -1,6 +1,7 @@
-export type { Serde } from "@/types/index.js";
 export type { Result } from "@rustify/result";
+export type { Serde } from "@/types/index.js";
 
+import { Err, Ok } from "@rustify/result";
 import {
   createArraySerde,
   createObjectSerde,
@@ -26,7 +27,6 @@ import {
   createStringSerde,
 } from "@/serializers/primitives.js";
 import type { Serde } from "@/types/index.js";
-import { Err, Ok } from "@rustify/result";
 
 // Throwing mode exports - simple names for ergonomic usage
 export const string: Serde<string, string> = createStringSerde().throwing;
