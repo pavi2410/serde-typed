@@ -1,26 +1,18 @@
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
-import { resolve } from 'path'
+import dts from 'vite-plugin-dts'
 
 export default defineConfig({
+  plugins: [dts()],
   build: {
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
         safe: resolve(__dirname, 'src/safe.ts')
       },
-      name: 'TsSerde',
       formats: ['es']
     },
-    minify: 'terser',
     sourcemap: true,
-    rollupOptions: {
-      output: {
-        preserveModules: false,
-        exports: 'named'
-      }
-    },
-    target: 'es2022',
-    outDir: 'dist'
   },
   resolve: {
     alias: {
