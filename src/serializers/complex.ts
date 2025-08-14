@@ -1,6 +1,6 @@
 import { createSerde } from "@/serializers/index.js";
 import type { SafeSerde, Serde } from "@/types/index.js";
-import { Err, Ok } from "@/utils/result.js";
+import { Err, Ok } from "@rustify/result";
 
 export function createObjectSerde<T extends Record<string, any>>(
   fields: {
@@ -32,7 +32,7 @@ export function createObjectSerde<T extends Record<string, any>>(
 
       for (const key in fields) {
         const fieldResult = fields[key]!.safe.deserialize(obj[key]);
-        if (!fieldResult.ok) {
+        if (fieldResult.isErr()) {
           return Err(`Field '${key}': ${fieldResult.error}`);
         }
         result[key] = fieldResult.value;
@@ -58,7 +58,7 @@ export function createArraySerde<T>(itemSerde: {
       const result: T[] = [];
       for (let i = 0; i < serialized.length; i++) {
         const itemResult = itemSerde.safe.deserialize(serialized[i]);
-        if (!itemResult.ok) {
+        if (itemResult.isErr()) {
           return Err(`Array item at index ${i}: ${itemResult.error}`);
         }
         result.push(itemResult.value);
@@ -95,12 +95,12 @@ export function createTupleSerde<T extends readonly any[]>(
       const result: any[] = [];
       for (let i = 0; i < serdes.length; i++) {
         const itemResult = serdes[i]!.safe.deserialize(serialized[i]);
-        if (!itemResult.ok) {
+        if (itemResult.isErr()) {
           return Err(`Tuple item at index ${i}: ${itemResult.error}`);
         }
         result.push(itemResult.value);
       }
-      return Ok(result as T);
+      return Ok(result as unknown as T);
     },
   };
 
@@ -172,7 +172,7 @@ export function createRecordSerde<T>(valueSerde: {
 
       for (const key in obj) {
         const valueResult = valueSerde.safe.deserialize(obj[key]);
-        if (!valueResult.ok) {
+        if (valueResult.isErr()) {
           return Err(`Record key '${key}': ${valueResult.error}`);
         }
         result[key] = valueResult.value;

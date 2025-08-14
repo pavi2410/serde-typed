@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@rustify/result':
+        specifier: ^0.0.1
+        version: 0.0.1
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.1.4
@@ -387,6 +391,10 @@ packages:
     resolution: {integrity: sha512-CvUo2ixeIQGtF6WvuB87XWqPQkoFAFqW+HUo/WzHwuHDvIwZCtjdWXoYCcr06iKGydiqTclC4jU/TNObC/xKZg==}
     cpu: [x64]
     os: [win32]
+
+  '@rustify/result@0.0.1':
+    resolution: {integrity: sha512-kmmtvDX5Tsrm2ZdtTN/mFeC+D+6jH984gqpmFBIEjm7Q2XU+WSzN8gSDPWW/2Knfjr6Lx2kGUWZpTZ4ejUSY+g==}
+    engines: {node: '>=22.0.0'}
 
   '@types/chai@5.2.2':
     resolution: {integrity: sha512-8kB30R7Hwqf40JPiKhVzodJs2Qc1ZJ5zuT3uzw5Hq/dhNCl3G3l83jfpdI1e20BP348+fV7VIL/+FxaXkqBmWg==}
@@ -1050,6 +1058,8 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.46.2':
     optional: true
+
+  '@rustify/result@0.0.1': {}
 
   '@types/chai@5.2.2':
     dependencies:

@@ -1,7 +1,7 @@
 import { createSerde } from "@/serializers/index.js";
 import type { SafeSerde, Serde } from "@/types/index.js";
-import type { Result } from "@/utils/result.js";
-import { Err, Ok } from "@/utils/result.js";
+import type { Result } from "@rustify/result";
+import { Err, Ok } from "@rustify/result";
 
 export const createStringSerde = () => {
   const safe: SafeSerde<string, string> = {
@@ -99,7 +99,7 @@ export function createTransformSerde<T, S, U>(
       baseSerde.safe.serialize(serializeTransform(value)),
     deserialize: (serialized: unknown) => {
       const result = baseSerde.safe.deserialize(serialized);
-      if (!result.ok) return result;
+      if (result.isErr()) return result;
       return safeDeserializeTransform(result.value);
     },
   };

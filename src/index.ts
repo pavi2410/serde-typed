@@ -1,5 +1,5 @@
 export type { Serde } from "@/types/index.js";
-export type { Result } from "@/utils/result.js";
+export type { Result } from "@rustify/result";
 
 import {
   createArraySerde,
@@ -26,7 +26,7 @@ import {
   createStringSerde,
 } from "@/serializers/primitives.js";
 import type { Serde } from "@/types/index.js";
-import { Err, Ok } from "@/utils/result.js";
+import { Err, Ok } from "@rustify/result";
 
 // Throwing mode exports - simple names for ergonomic usage
 export const string: Serde<string, string> = createStringSerde().throwing;
@@ -106,7 +106,7 @@ export const tuple = <T extends readonly unknown[]>(
   }) as {
     [K in keyof T]: DualSerde<T[K], unknown>;
   };
-  return createTupleSerde(...(dualSerdes as never)).throwing as Serde<
+  return createTupleSerde(...(dualSerdes as any)).throwing as Serde<
     T,
     unknown[]
   >;

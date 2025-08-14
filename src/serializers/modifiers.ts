@@ -1,6 +1,6 @@
 import { createSerde } from "@/serializers/index.js";
 import type { SafeSerde, Serde } from "@/types/index.js";
-import { Err, Ok } from "@/utils/result.js";
+import { Err, Ok } from "@rustify/result";
 
 export function createOptionalSerde<T>(serde: {
   throwing: Serde<T, any>;
@@ -74,7 +74,7 @@ export function createMappedSerde<T, K extends keyof T>(
       const mapped: Record<string, any> = {};
 
       for (const [externalKey, internalKey] of Object.entries(mapping)) {
-        mapped[internalKey] = obj[externalKey];
+        mapped[internalKey as string] = obj[externalKey];
       }
 
       return serde.safe.deserialize(mapped);

@@ -11,7 +11,7 @@ export const createSerde = <T, S>(
     serialize: safe.serialize,
     deserialize: (serialized) => {
       const result = safe.deserialize(serialized);
-      if (!result.ok) {
+      if (result.isErr()) {
         throw new Error(result.error);
       }
       return result.value;

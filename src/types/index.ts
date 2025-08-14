@@ -1,4 +1,4 @@
-import type { Result } from "@/utils/result.js";
+import type { Result } from "@rustify/result";
 
 export type Serde<T, S> = {
   serialize(value: T): S;

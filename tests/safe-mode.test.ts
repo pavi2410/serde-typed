@@ -10,16 +10,16 @@ describe("Safe Mode API", () => {
 
     test("string deserialization success", () => {
       const result = t.string.deserialize("hello");
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toBe("hello");
       }
     });
 
     test("string deserialization returns error on invalid input", () => {
       const result = t.string.deserialize(123);
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
+      expect(result.isOk()).toBe(false);
+      if (result.isErr()) {
         expect(result.error).toBe("Expected string, got number");
       }
     });
@@ -31,16 +31,16 @@ describe("Safe Mode API", () => {
 
     test("number deserialization success", () => {
       const result = t.number.deserialize(42);
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toBe(42);
       }
     });
 
     test("number deserialization returns error on invalid input", () => {
       const result = t.number.deserialize("not a number");
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
+      expect(result.isOk()).toBe(false);
+      if (result.isErr()) {
         expect(result.error).toBe("Expected number, got string");
       }
     });
@@ -52,16 +52,16 @@ describe("Safe Mode API", () => {
 
     test("boolean deserialization success", () => {
       const result = t.boolean.deserialize(false);
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toBe(false);
       }
     });
 
     test("boolean deserialization returns error on invalid input", () => {
       const result = t.boolean.deserialize("true");
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
+      expect(result.isOk()).toBe(false);
+      if (result.isErr()) {
         expect(result.error).toBe("Expected boolean, got string");
       }
     });
@@ -74,22 +74,22 @@ describe("Safe Mode API", () => {
 
     test("date deserialization success", () => {
       const result = t.date.deserialize("2023-12-25T10:30:00.000Z");
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toEqual(new Date("2023-12-25T10:30:00.000Z"));
       }
     });
 
     test("date deserialization returns error on invalid input", () => {
       const result1 = t.date.deserialize(123);
-      expect(result1.ok).toBe(false);
-      if (!result1.ok) {
+      expect(result1.isOk()).toBe(false);
+      if (result1.isErr()) {
         expect(result1.error).toBe("Expected string for date, got number");
       }
 
       const result2 = t.date.deserialize("invalid-date");
-      expect(result2.ok).toBe(false);
-      if (!result2.ok) {
+      expect(result2.isOk()).toBe(false);
+      if (result2.isErr()) {
         expect(result2.error).toBe("Invalid date string: invalid-date");
       }
     });
@@ -105,16 +105,16 @@ describe("Safe Mode API", () => {
 
     test("deserialize success", () => {
       const result = literalSerde.deserialize("hello");
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toBe("hello");
       }
     });
 
     test("deserialize returns error on wrong literal", () => {
       const result = literalSerde.deserialize("world");
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
+      expect(result.isOk()).toBe(false);
+      if (result.isErr()) {
         expect(result.error).toBe("Expected literal hello, got world");
       }
     });
@@ -136,16 +136,16 @@ describe("Safe Mode API", () => {
     test("deserialize success", () => {
       const data = { name: "Bob", age: 25, active: false };
       const result = PersonSerde.deserialize(data);
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toEqual({ name: "Bob", age: 25, active: false });
       }
     });
 
     test("deserialize returns error on invalid object", () => {
       const result = PersonSerde.deserialize("not an object");
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
+      expect(result.isOk()).toBe(false);
+      if (result.isErr()) {
         expect(result.error).toBe("Expected object");
       }
     });
@@ -153,8 +153,8 @@ describe("Safe Mode API", () => {
     test("deserialize returns error on field error", () => {
       const data = { name: "Bob", age: "not a number", active: false };
       const result = PersonSerde.deserialize(data);
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
+      expect(result.isOk()).toBe(false);
+      if (result.isErr()) {
         expect(result.error).toContain("Field 'age'");
         expect(result.error).toContain("Expected number, got string");
       }
@@ -173,16 +173,16 @@ describe("Safe Mode API", () => {
     test("deserialize success", () => {
       const data = [10, 20, 30];
       const result = NumberArraySerde.deserialize(data);
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toEqual([10, 20, 30]);
       }
     });
 
     test("deserialize returns error on invalid array", () => {
       const result = NumberArraySerde.deserialize("not an array");
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
+      expect(result.isOk()).toBe(false);
+      if (result.isErr()) {
         expect(result.error).toBe("Expected array");
       }
     });
@@ -190,8 +190,8 @@ describe("Safe Mode API", () => {
     test("deserialize returns error on item error", () => {
       const data = [1, "not a number", 3];
       const result = NumberArraySerde.deserialize(data);
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
+      expect(result.isOk()).toBe(false);
+      if (result.isErr()) {
         expect(result.error).toContain("Array item at index 1");
         expect(result.error).toContain("Expected number, got string");
       }
@@ -213,24 +213,24 @@ describe("Safe Mode API", () => {
 
     test("deserialize defined value", () => {
       const result = OptionalStringSerde.deserialize("hello");
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toBe("hello");
       }
     });
 
     test("deserialize undefined value", () => {
       const result = OptionalStringSerde.deserialize(undefined);
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toBe(undefined);
       }
     });
 
     test("deserialize returns error on invalid value", () => {
       const result = OptionalStringSerde.deserialize(123);
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
+      expect(result.isOk()).toBe(false);
+      if (result.isErr()) {
         expect(result.error).toBe("Expected string, got number");
       }
     });
@@ -251,24 +251,24 @@ describe("Safe Mode API", () => {
 
     test("deserialize non-null value", () => {
       const result = NullableStringSerde.deserialize("hello");
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toBe("hello");
       }
     });
 
     test("deserialize null value", () => {
       const result = NullableStringSerde.deserialize(null);
-      expect(result.ok).toBe(true);
-      if (result.ok) {
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
         expect(result.value).toBe(null);
       }
     });
 
     test("deserialize returns error on invalid value", () => {
       const result = NullableStringSerde.deserialize(123);
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
+      expect(result.isOk()).toBe(false);
+      if (result.isErr()) {
         expect(result.error).toBe("Expected string, got number");
       }
     });

@@ -1,5 +1,5 @@
 export type { SafeSerde } from "@/types/index.js";
-export type { Result } from "@/utils/result.js";
+export type { Result } from "@rustify/result";
 
 import {
   createArraySerde,
@@ -65,7 +65,7 @@ export const array = <T>(
 export const tuple = <T extends readonly unknown[]>(
   ...serdes: { [K in keyof T]: SafeSerde<T[K], unknown> }
 ): SafeSerde<T, unknown[]> => {
-  const dualSerdes = serdes.map((serde) => createSerde(serde)) as never;
+  const dualSerdes = serdes.map((serde) => createSerde(serde)) as any;
   return createTupleSerde(...dualSerdes).safe as SafeSerde<T, unknown[]>;
 };
 

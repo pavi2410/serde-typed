@@ -61,5 +61,8 @@
   },
   "homepage": "https://github.com/rustify-ts/serde#readme",
   "author": "Your Name",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@rustify/result": "^0.0.1"
+  }
 }
