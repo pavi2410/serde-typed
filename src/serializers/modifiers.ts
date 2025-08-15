@@ -1,60 +1,51 @@
 import { Err, Ok } from "@rustify/result";
-import { createSerde } from "@/serializers/index.js";
-import type { SafeSerde, Serde } from "@/types/index.js";
+import type { Serde } from "@/types.js";
 
-export function createOptionalSerde<T>(serde: {
-  throwing: Serde<T, any>;
-  safe: SafeSerde<T, any>;
-}) {
-  const safe: SafeSerde<T | undefined, any> = {
+export function createOptionalSerde<T>(
+  serde: Serde<T, any>,
+): Serde<T | undefined, any> {
+  return {
     serialize: (value) =>
-      value === undefined ? undefined : serde.safe.serialize(value),
+      value === undefined ? undefined : serde.serialize(value),
     deserialize: (serialized) => {
       if (serialized === undefined) return Ok(undefined);
-      return serde.safe.deserialize(serialized);
+      return serde.deserialize(serialized);
     },
   };
-
-  return createSerde(safe);
 }
 
-export function createNullableSerde<T>(serde: {
-  throwing: Serde<T, any>;
-  safe: SafeSerde<T, any>;
-}) {
-  const safe: SafeSerde<T | null, any> = {
-    serialize: (value) => (value === null ? null : serde.safe.serialize(value)),
+export function createNullableSerde<T>(
+  serde: Serde<T, any>,
+): Serde<T | null, any> {
+  return {
+    serialize: (value) => (value === null ? null : serde.serialize(value)),
     deserialize: (serialized) => {
       if (serialized === null) return Ok(null);
-      return serde.safe.deserialize(serialized);
+      return serde.deserialize(serialized);
     },
   };
-
-  return createSerde(safe);
 }
 
 export function createDefaultSerde<T>(
-  serde: { throwing: Serde<T, any>; safe: SafeSerde<T, any> },
+  serde: Serde<T, any>,
   defaultValue: T,
-) {
-  const safe: SafeSerde<T, any> = {
-    serialize: serde.safe.serialize,
+): Serde<T, any> {
+  return {
+    serialize: serde.serialize,
     deserialize: (serialized) => {
       if (serialized === undefined) return Ok(defaultValue);
-      return serde.safe.deserialize(serialized);
+      return serde.deserialize(serialized);
     },
   };
-
-  return createSerde(safe);
 }
 
 export function createMappedSerde<T, K extends keyof T>(
-  serde: { throwing: Serde<T, any>; safe: SafeSerde<T, any> },
+  serde: Serde<T, any>,
   mapping: Record<string, K>,
-) {
-  const safe: SafeSerde<T, Record<string, any>> = {
+): Serde<T, Record<string, any>> {
+  return {
     serialize: (value) => {
-      const serialized = serde.safe.serialize(value);
+      const serialized = serde.serialize(value);
       const result: Record<string, any> = {};
       for (const [externalKey, internalKey] of Object.entries(mapping)) {
         result[externalKey] = serialized[internalKey];
@@ -77,20 +68,15 @@ export function createMappedSerde<T, K extends keyof T>(
         mapped[internalKey as string] = obj[externalKey];
       }
 
-      return serde.safe.deserialize(mapped);
+      return serde.deserialize(mapped);
     },
   };
-
-  return createSerde(safe);
 }
 
 export function createLazySerde<T>(
-  getSerdeFactory: () => {
-    throwing: Serde<T, any>;
-    safe: SafeSerde<T, any>;
-  },
-) {
-  let serde: { throwing: Serde<T, any>; safe: SafeSerde<T, any> } | undefined;
+  getSerdeFactory: () => Serde<T, any>,
+): Serde<T, any> {
+  let serde: Serde<T, any> | undefined;
 
   const getSerde = () => {
     if (!serde) {
@@ -99,21 +85,19 @@ export function createLazySerde<T>(
     return serde;
   };
 
-  const safe: SafeSerde<T, any> = {
-    serialize: (value) => getSerde().safe.serialize(value),
-    deserialize: (serialized) => getSerde().safe.deserialize(serialized),
+  return {
+    serialize: (value) => getSerde().serialize(value),
+    deserialize: (serialized) => getSerde().deserialize(serialized),
   };
-
-  return createSerde(safe);
 }
 
 export function createRenameSerde<T, K extends keyof T>(
-  serde: { throwing: Serde<T, any>; safe: SafeSerde<T, any> },
+  serde: Serde<T, any>,
   fieldMapping: Partial<Record<K, string>>,
-) {
-  const safe: SafeSerde<T, any> = {
+): Serde<T, any> {
+  return {
     serialize: (value) => {
-      const serialized = serde.safe.serialize(value);
+      const serialized = serde.serialize(value);
       const result: Record<string, any> = {};
 
       for (const key in serialized) {
@@ -144,9 +128,7 @@ export function createRenameSerde<T, K extends keyof T>(
         unmapped[originalKey] = obj[key];
       }
 
-      return serde.safe.deserialize(unmapped);
+      return serde.deserialize(unmapped);
     },
   };
-
-  return createSerde(safe);
 }

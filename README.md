@@ -3,15 +3,15 @@
 [![CI](https://github.com/rustify-ts/serde/workflows/CI/badge.svg)](https://github.com/rustify-ts/serde/actions)
 [![npm version](https://badge.fury.io/js/@rustify/serde.svg)](https://badge.fury.io/js/@rustify/serde)
 
-A production-ready TypeScript serialization/deserialization library inspired by Rust's serde. Provides pure structural transformation between types and their serialized forms without validation.
+A production-ready TypeScript serialization/deserialization library inspired by Rust's serde. Provides pure structural transformation between types and their serialized forms with Result-based error handling.
 
 ## Features
 
-- 🦀 **Rust-inspired**: API design inspired by Rust's powerful serde library
-- 🔧 **Pure transformation**: Focus on serialization/deserialization without validation
+- 🦀 **Rust-inspired**: API design inspired by Rust's powerful serde library with Result types
+- 🔧 **Pure transformation**: Focus on serialization/deserialization with type-safe error handling
 - 🌳 **Tree-shakeable**: ESM-only with minimal bundle size
 - 🎯 **Type-safe**: Full TypeScript support with excellent type inference
-- 🚫 **Zero dependencies**: Lightweight with no runtime dependencies
+- 🚫 **Zero dependencies**: Lightweight with only @rustify/result as dependency
 - 🔄 **Composable**: Build complex serializers from simple building blocks
 - 📦 **Browser-first**: Designed for modern browsers and bundlers
 - ⚡ **Fast**: Optimized for performance
@@ -46,9 +46,16 @@ const person = { name: "Alice", age: 30, active: true }
 const serialized = PersonSerde.serialize(person)
 console.log(serialized) // { name: "Alice", age: 30, active: true }
 
-// Deserialize data
-const deserialized = PersonSerde.deserialize(serialized)
-console.log(deserialized) // { name: "Alice", age: 30, active: true }
+// Deserialize data (returns Result<T, string>)
+const result = PersonSerde.deserialize(serialized)
+if (result.isOk()) {
+  console.log(result.value) // { name: "Alice", age: 30, active: true }
+} else {
+  console.error(result.error) // Error message
+}
+
+// Use .unwrap() when you're confident the operation will succeed
+const deserialized = PersonSerde.deserialize(serialized).unwrap()
 ```
 
 ## Core Concepts
@@ -60,22 +67,29 @@ All serializers implement the `Serde<T, S>` interface:
 ```typescript
 interface Serde<T, S> {
   serialize(value: T): S
-  deserialize(serialized: S): T
+  deserialize(serialized: unknown): Result<T, string>
 }
 ```
 
-### Safe Serializers
+### Result-Based Error Handling
 
-For runtime safety, use `SafeSerde<T, S>` which returns `Result<T, string>`:
+All deserialization operations return `Result<T, string>` for type-safe error handling:
 
 ```typescript
-import * as safe from '@rustify/serde/safe'
+import * as t from '@rustify/serde'
 
-const result = safe.string.deserialize(123) // not a string
-if (result.ok) {
+const result = t.string.deserialize(123) // not a string
+if (result.isOk()) {
   console.log(result.value) // string
 } else {
   console.log(result.error) // "Expected string, got number"
+}
+
+// Use .unwrap() when you want throwing behavior
+try {
+  const value = t.string.deserialize(123).unwrap()
+} catch (error) {
+  console.error(error.message) // "Expected string, got number"
 }
 ```
 
@@ -94,7 +108,11 @@ t.boolean.serialize(true) // true
 // Date serialization (to/from ISO string)
 const date = new Date("2023-01-01T00:00:00.000Z")
 t.date.serialize(date) // "2023-01-01T00:00:00.000Z"
-t.date.deserialize("2023-01-01T00:00:00.000Z") // Date object
+
+const dateResult = t.date.deserialize("2023-01-01T00:00:00.000Z")
+if (dateResult.isOk()) {
+  console.log(dateResult.value) // Date object
+}
 ```
 
 ### Literal Values
@@ -104,7 +122,11 @@ import * as t from '@rustify/serde'
 
 const ConstantSerde = t.literal("CONSTANT")
 ConstantSerde.serialize("CONSTANT") // "CONSTANT"
-ConstantSerde.deserialize("anything") // "CONSTANT"
+
+const result = ConstantSerde.deserialize("CONSTANT")
+if (result.isOk()) {
+  console.log(result.value) // "CONSTANT"
+}
 ```
 
 ### Complex Types
@@ -186,20 +208,32 @@ Transform data during serialization/deserialization:
 ```typescript
 import { createTransformSerde } from '@rustify/serde/serializers/primitives'
 import * as t from '@rustify/serde'
-import * as safe from '@rustify/serde/safe'
+import { Ok, Err } from '@rustify/result'
 
 // Boolean to "True"/"False" string transformation
 const BooleanString = createTransformSerde(
-  { throwing: t.string, safe: safe.string },
+  t.string,
   (value: boolean) => value ? "True" : "False",
   (serialized: string) => serialized === "True",
-  (serialized: string) => ({ ok: true, value: serialized === "True" })
-).throwing
+  (serialized: string) => {
+    if (serialized === "True") return Ok(true)
+    if (serialized === "False") return Ok(false)
+    return Err(`Invalid boolean string: ${serialized}`)
+  }
+)
 
 BooleanString.serialize(true) // "True"
 BooleanString.serialize(false) // "False"
-BooleanString.deserialize("True") // true
-BooleanString.deserialize("False") // false
+
+const result1 = BooleanString.deserialize("True")
+if (result1.isOk()) {
+  console.log(result1.value) // true
+}
+
+const result2 = BooleanString.deserialize("Invalid")
+if (result2.isErr()) {
+  console.log(result2.error) // "Invalid boolean string: Invalid"
+}
 ```
 
 ## Recursive Types
@@ -234,30 +268,43 @@ const tree: TreeNode = {
 }
 
 const serialized = TreeNodeSerde.serialize(tree)
-const deserialized = TreeNodeSerde.deserialize(serialized)
+const result = TreeNodeSerde.deserialize(serialized)
+if (result.isOk()) {
+  const deserialized = result.value
+  console.log(deserialized)
+}
 ```
 
 ## Error Handling
 
-Use safe serializers for runtime validation:
+All deserialization operations return `Result<T, string>` for comprehensive error handling:
 
 ```typescript
-import * as safe from '@rustify/serde/safe'
+import * as t from '@rustify/serde'
 
-const SafePersonSerde = safe.object({
-  name: safe.string,
-  age: safe.number
+const PersonSerde = t.object({
+  name: t.string,
+  age: t.number
 })
 
-const result = SafePersonSerde.deserialize({
+const result = PersonSerde.deserialize({
   name: "Alice",
   age: "not a number" // Invalid!
 })
 
-if (result.ok) {
+if (result.isOk()) {
   console.log(result.value) // Person
 } else {
   console.log(result.error) // "Field 'age': Expected number, got string"
+}
+
+// Chain operations with Result methods
+const chainedResult = t.number.deserialize(42)
+  .map(n => n * 2)
+  .map(n => `The result is ${n}`)
+
+if (chainedResult.isOk()) {
+  console.log(chainedResult.value) // "The result is 84"
 }
 ```
 
@@ -277,35 +324,68 @@ const PersonSerde = t.object({
 
 ## Advanced Usage
 
-### Enum Serialization
-
-```typescript
-import * as safe from '@rustify/serde/safe'
-
-enum Color {
-  Red = "red",
-  Green = "green",
-  Blue = "blue"
-}
-
-const ColorSerde = safe.enumSerde(Color)
-const result = ColorSerde.deserialize("red")
-if (result.ok) {
-  console.log(result.value) // "red" (properly typed as Color)
-}
-```
-
-### Field Renaming
+### Union Types and Error Handling
 
 ```typescript
 import * as t from '@rustify/serde'
 
-const RenamedPersonSerde = t.rename(
-  t.object({ name: t.string }),
-  { name: "full_name" }
-)
+// Create a union of different types
+const StringOrNumberSerde = t.union([t.string, t.number])
 
-// Serializes { name: "Alice" } to { full_name: "Alice" }
+const result1 = StringOrNumberSerde.deserialize("hello")
+if (result1.isOk()) {
+  console.log(result1.value) // "hello"
+}
+
+const result2 = StringOrNumberSerde.deserialize(42)
+if (result2.isOk()) {
+  console.log(result2.value) // 42
+}
+
+const result3 = StringOrNumberSerde.deserialize(true)
+if (result3.isErr()) {
+  console.log(result3.error) // Union deserialization error
+}
+```
+
+### Working with Complex Nested Data
+
+```typescript
+import * as t from '@rustify/serde'
+
+const UserSerde = t.object({
+  id: t.number,
+  profile: t.object({
+    name: t.string,
+    email: t.optional(t.string),
+    preferences: t.record(t.boolean)
+  }),
+  posts: t.array(t.object({
+    title: t.string,
+    content: t.string,
+    tags: t.array(t.string)
+  }))
+})
+
+// Handle complex nested deserialization
+const userData = {
+  id: 1,
+  profile: {
+    name: "Alice",
+    email: "alice@example.com",
+    preferences: { darkMode: true, notifications: false }
+  },
+  posts: [
+    { title: "Hello", content: "World", tags: ["intro", "greeting"] }
+  ]
+}
+
+const result = UserSerde.deserialize(userData)
+if (result.isOk()) {
+  console.log("Valid user data:", result.value)
+} else {
+  console.log("Validation error:", result.error)
+}
 ```
 
 ## Browser Support

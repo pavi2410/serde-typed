@@ -6,10 +6,7 @@ export default defineConfig({
   plugins: [dts()],
   build: {
     lib: {
-      entry: {
-        index: resolve(__dirname, 'src/index.ts'),
-        safe: resolve(__dirname, 'src/safe.ts')
-      },
+      entry: resolve(__dirname, 'src/index.ts'),
       formats: ['es']
     },
     sourcemap: true,

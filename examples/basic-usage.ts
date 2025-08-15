@@ -1,5 +1,5 @@
+import { Err, Ok } from "@rustify/result";
 import * as t from "../src/index.js";
-import * as safe from "../src/safe.js";
 import { createTransformSerde } from "../src/serializers/primitives.js";
 
 // Basic primitive serialization
@@ -24,7 +24,11 @@ const serializedPerson = PersonSerde.serialize(person);
 console.log(serializedPerson);
 
 const deserializedPerson = PersonSerde.deserialize(serializedPerson);
-console.log(deserializedPerson);
+if (deserializedPerson.isOk()) {
+  console.log(deserializedPerson.value);
+} else {
+  console.error("Deserialization failed:", deserializedPerson.error);
+}
 
 // Array serialization
 console.log("\n=== Array ===");
@@ -50,37 +54,64 @@ console.log(UserSerde.serialize(user2));
 // Custom transformation: Boolean to "True"/"False" strings
 console.log("\n=== Custom Boolean Transform ===");
 const BooleanString = createTransformSerde(
-  { throwing: t.string, safe: safe.string },
+  t.string,
   (value: boolean) => (value ? "True" : "False"),
   (serialized: string) => serialized === "True",
-  (serialized: string) => ({ ok: true, value: serialized === "True" }),
-).throwing;
+  (serialized: string) => Ok(serialized === "True"),
+);
 
 console.log(BooleanString.serialize(true)); // "True"
 console.log(BooleanString.serialize(false)); // "False"
-console.log(BooleanString.deserialize("True")); // true
-console.log(BooleanString.deserialize("False")); // false
+const result1 = BooleanString.deserialize("True");
+const result2 = BooleanString.deserialize("False");
+console.log(result1.isOk() ? result1.value : result1.error); // true
+console.log(result2.isOk() ? result2.value : result2.error); // false
 
-// Safe transformation with error handling
-console.log("\n=== Safe Transform ===");
-const SafeBooleanString = createTransformSerde(
-  { throwing: t.string, safe: safe.string },
+// Error handling with Result types
+console.log("\n=== Error Handling ===");
+const BooleanString2 = createTransformSerde(
+  t.string,
   (value: boolean) => (value ? "True" : "False"),
   (serialized: string) => serialized === "True",
   (serialized: string) => {
-    if (serialized === "True") return { ok: true, value: true };
-    if (serialized === "False") return { ok: true, value: false };
-    return { ok: false, error: `Invalid boolean string: ${serialized}` };
+    if (serialized === "True") return Ok(true);
+    if (serialized === "False") return Ok(false);
+    return Err(`Invalid boolean string: ${serialized}`);
   },
-).safe;
+);
 
-const result1 = SafeBooleanString.deserialize("True");
-const result2 = SafeBooleanString.deserialize("Invalid");
+const validResult = BooleanString2.deserialize("True");
+const invalidResult = BooleanString2.deserialize("Invalid");
 
-console.log(result1); // { ok: true, value: true }
-console.log(result2); // { ok: false, error: "Invalid boolean string: Invalid" }
+console.log(validResult); // Ok with value: true
+console.log(invalidResult); // Err with error message
 
-// Using the serde functions
-console.log("\n=== Using serde functions ===");
-console.log(t.string.serialize("world"));
-console.log(t.number.serialize(100));
+// Using .unwrap() for throwing behavior when needed
+try {
+  const throwingResult = BooleanString2.deserialize("Invalid").unwrap();
+  console.log(throwingResult);
+} catch (error) {
+  console.log("Caught error:", error.message);
+}
+
+// Working with Result values
+console.log("\n=== Working with Results ===");
+const stringResult = t.string.deserialize("hello");
+if (stringResult.isOk()) {
+  console.log("String value:", stringResult.value);
+}
+
+const numberResult = t.number.deserialize("not a number");
+if (numberResult.isErr()) {
+  console.log("Number error:", numberResult.error);
+}
+
+// Chain operations with Result
+const chainedResult = t.number
+  .deserialize(42)
+  .map((n) => n * 2)
+  .map((n) => `The result is ${n}`);
+
+if (chainedResult.isOk()) {
+  console.log(chainedResult.value); // "The result is 84"
+}

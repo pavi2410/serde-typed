@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import * as t from "../src/safe.js";
+import * as t from "../src/index.js";
 
-describe("Safe Mode API", () => {
+describe("Serde API", () => {
   describe("Primitives", () => {
     test("string serialization", () => {
       const result = t.string.serialize("hello");
