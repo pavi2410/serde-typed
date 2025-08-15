@@ -41,13 +41,15 @@ const PersonSerde = t.object({
   active: t.boolean
 })
 
-// Serialize data
+// Serialize data (returns Result<S, string>)
 const person = { name: "Alice", age: 30, active: true }
-const serialized = PersonSerde.serialize(person)
-console.log(serialized) // { name: "Alice", age: 30, active: true }
+const serializedResult = PersonSerde.serialize(person)
+if (serializedResult.isOk()) {
+  console.log(serializedResult.value) // { name: "Alice", age: 30, active: true }
+}
 
 // Deserialize data (returns Result<T, string>)
-const result = PersonSerde.deserialize(serialized)
+const result = PersonSerde.deserialize(serializedResult.value)
 if (result.isOk()) {
   console.log(result.value) // { name: "Alice", age: 30, active: true }
 } else {
@@ -55,6 +57,7 @@ if (result.isOk()) {
 }
 
 // Use .unwrap() when you're confident the operation will succeed
+const serialized = PersonSerde.serialize(person).unwrap()
 const deserialized = PersonSerde.deserialize(serialized).unwrap()
 ```
 
@@ -66,14 +69,14 @@ All serializers implement the `Serde<T, S>` interface:
 
 ```typescript
 interface Serde<T, S> {
-  serialize(value: T): S
+  serialize(value: T): Result<S, string>
   deserialize(serialized: unknown): Result<T, string>
 }
 ```
 
 ### Result-Based Error Handling
 
-All deserialization operations return `Result<T, string>` for type-safe error handling:
+Both serialization and deserialization operations return `Result<T, string>` for type-safe error handling:
 
 ```typescript
 import * as t from '@rustify/serde'
@@ -100,14 +103,28 @@ try {
 ```typescript
 import * as t from '@rustify/serde'
 
-// Basic types
-t.string.serialize("hello") // "hello"
-t.number.serialize(42) // 42
-t.boolean.serialize(true) // true
+// Basic types (all return Result<S, string>)
+const stringResult = t.string.serialize("hello")
+if (stringResult.isOk()) {
+  console.log(stringResult.value) // "hello"
+}
+
+const numberResult = t.number.serialize(42)
+if (numberResult.isOk()) {
+  console.log(numberResult.value) // 42
+}
+
+const boolResult = t.boolean.serialize(true)
+if (boolResult.isOk()) {
+  console.log(boolResult.value) // true
+}
 
 // Date serialization (to/from ISO string)
 const date = new Date("2023-01-01T00:00:00.000Z")
-t.date.serialize(date) // "2023-01-01T00:00:00.000Z"
+const dateResult = t.date.serialize(date)
+if (dateResult.isOk()) {
+  console.log(dateResult.value) // "2023-01-01T00:00:00.000Z"
+}
 
 const dateResult = t.date.deserialize("2023-01-01T00:00:00.000Z")
 if (dateResult.isOk()) {
@@ -121,7 +138,10 @@ if (dateResult.isOk()) {
 import * as t from '@rustify/serde'
 
 const ConstantSerde = t.literal("CONSTANT")
-ConstantSerde.serialize("CONSTANT") // "CONSTANT"
+const literalResult = ConstantSerde.serialize("CONSTANT")
+if (literalResult.isOk()) {
+  console.log(literalResult.value) // "CONSTANT"
+}
 
 const result = ConstantSerde.deserialize("CONSTANT")
 if (result.isOk()) {
@@ -148,7 +168,10 @@ const PersonSerde = t.object({
 import * as t from '@rustify/serde'
 
 const NumberArraySerde = t.array(t.number)
-NumberArraySerde.serialize([1, 2, 3]) // [1, 2, 3]
+const arrayResult = NumberArraySerde.serialize([1, 2, 3])
+if (arrayResult.isOk()) {
+  console.log(arrayResult.value) // [1, 2, 3]
+}
 ```
 
 #### Tuples
@@ -157,7 +180,10 @@ NumberArraySerde.serialize([1, 2, 3]) // [1, 2, 3]
 import * as t from '@rustify/serde'
 
 const CoordinateSerde = t.tuple(t.number, t.number, t.string)
-CoordinateSerde.serialize([10, 20, "point"]) // [10, 20, "point"]
+const tupleResult = CoordinateSerde.serialize([10, 20, "point"])
+if (tupleResult.isOk()) {
+  console.log(tupleResult.value) // [10, 20, "point"]
+}
 ```
 
 #### Records
@@ -166,7 +192,10 @@ CoordinateSerde.serialize([10, 20, "point"]) // [10, 20, "point"]
 import * as t from '@rustify/serde'
 
 const StringRecordSerde = t.record(t.string)
-StringRecordSerde.serialize({ key: "value" }) // { key: "value" }
+const recordResult = StringRecordSerde.serialize({ key: "value" })
+if (recordResult.isOk()) {
+  console.log(recordResult.value) // { key: "value" }
+}
 ```
 
 ### Modifiers
@@ -177,8 +206,15 @@ StringRecordSerde.serialize({ key: "value" }) // { key: "value" }
 import * as t from '@rustify/serde'
 
 const OptionalString = t.optional(t.string)
-OptionalString.serialize(undefined) // undefined
-OptionalString.serialize("hello") // "hello"
+const optionalResult1 = OptionalString.serialize(undefined)
+if (optionalResult1.isOk()) {
+  console.log(optionalResult1.value) // undefined
+}
+
+const optionalResult2 = OptionalString.serialize("hello")
+if (optionalResult2.isOk()) {
+  console.log(optionalResult2.value) // "hello"
+}
 ```
 
 #### Nullable Fields
@@ -187,8 +223,15 @@ OptionalString.serialize("hello") // "hello"
 import * as t from '@rustify/serde'
 
 const NullableString = t.nullable(t.string)
-NullableString.serialize(null) // null
-NullableString.serialize("hello") // "hello"
+const nullableResult1 = NullableString.serialize(null)
+if (nullableResult1.isOk()) {
+  console.log(nullableResult1.value) // null
+}
+
+const nullableResult2 = NullableString.serialize("hello")
+if (nullableResult2.isOk()) {
+  console.log(nullableResult2.value) // "hello"
+}
 ```
 
 #### Default Values
@@ -222,8 +265,15 @@ const BooleanString = createTransformSerde(
   }
 )
 
-BooleanString.serialize(true) // "True"
-BooleanString.serialize(false) // "False"
+const serializeResult1 = BooleanString.serialize(true)
+if (serializeResult1.isOk()) {
+  console.log(serializeResult1.value) // "True"
+}
+
+const serializeResult2 = BooleanString.serialize(false)
+if (serializeResult2.isOk()) {
+  console.log(serializeResult2.value) // "False"
+}
 
 const result1 = BooleanString.deserialize("True")
 if (result1.isOk()) {
@@ -238,10 +288,11 @@ if (result2.isErr()) {
 
 ## Recursive Types
 
-Handle recursive data structures using `Lazy`:
+Handle recursive data structures using getter methods (similar to Zod's approach):
 
 ```typescript
 import * as t from '@rustify/serde'
+import type { Serde } from '@rustify/serde'
 
 interface TreeNode {
   value: number
@@ -249,11 +300,14 @@ interface TreeNode {
   children?: TreeNode[]
 }
 
-const TreeNodeSerde = t.lazy(() => t.object({
+// Use getters to define self-referential types
+const TreeNodeSerde = t.object({
   value: t.number,
   name: t.string,
-  children: t.optional(t.array(TreeNodeSerde))
-}))
+  get children() {
+    return t.optional(t.array(TreeNodeSerde))
+  }
+}) as Serde<TreeNode, Record<string, unknown>>
 
 // Now you can serialize/deserialize tree structures
 const tree: TreeNode = {
@@ -267,12 +321,52 @@ const tree: TreeNode = {
   ]
 }
 
-const serialized = TreeNodeSerde.serialize(tree)
+const serializedResult = TreeNodeSerde.serialize(tree)
+if (serializedResult.isErr()) {
+  console.error("Serialization failed:", serializedResult.error)
+  return
+}
+const serialized = serializedResult.value
 const result = TreeNodeSerde.deserialize(serialized)
 if (result.isOk()) {
   const deserialized = result.value
   console.log(deserialized)
 }
+```
+
+### Mutually Recursive Types
+
+You can also represent mutually recursive types using getters:
+
+```typescript
+import * as t from '@rustify/serde'
+import type { Serde } from '@rustify/serde'
+
+interface User {
+  email: string
+  posts: Post[]
+}
+
+interface Post {
+  title: string
+  author: User
+}
+
+const UserSerde = t.object({
+  email: t.string,
+  get posts() {
+    return t.array(PostSerde)
+  }
+}) as Serde<User, Record<string, unknown>>
+
+const PostSerde = t.object({
+  title: t.string,
+  get author() {
+    return UserSerde
+  }
+}) as Serde<Post, Record<string, unknown>>
+
+// Note: Be careful with cyclical data - it will cause infinite loops
 ```
 
 ## Error Handling
@@ -427,6 +521,13 @@ pnpm lint
 
 # Format code
 pnpm format
+
+# Run examples
+pnpm examples
+
+# Run individual examples
+pnpm examples:basic
+pnpm examples:recursive
 ```
 
 ## License

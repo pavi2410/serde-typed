@@ -8,9 +8,13 @@ export function createObjectSerde<T extends Record<string, any>>(
     serialize: (value) => {
       const result: Record<string, any> = {};
       for (const key in fields) {
-        result[key] = fields[key]!.serialize(value[key]);
+        const fieldResult = fields[key]!.serialize(value[key]);
+        if (fieldResult.isErr()) {
+          return Err(`Field '${key}': ${fieldResult.error}`);
+        }
+        result[key] = fieldResult.value;
       }
-      return result;
+      return Ok(result);
     },
     deserialize: (serialized) => {
       if (
@@ -40,7 +44,17 @@ export function createArraySerde<T>(
   itemSerde: Serde<T, any>,
 ): Serde<T[], any[]> {
   return {
-    serialize: (value) => value.map((item) => itemSerde.serialize(item)),
+    serialize: (value) => {
+      const result: any[] = [];
+      for (let i = 0; i < value.length; i++) {
+        const itemResult = itemSerde.serialize(value[i]!);
+        if (itemResult.isErr()) {
+          return Err(`Array item at index ${i}: ${itemResult.error}`);
+        }
+        result.push(itemResult.value);
+      }
+      return Ok(result);
+    },
     deserialize: (serialized) => {
       if (!Array.isArray(serialized)) {
         return Err("Expected array");
@@ -63,7 +77,17 @@ export function createTupleSerde<T extends readonly any[]>(
   ...serdes: { [K in keyof T]: Serde<T[K], any> }
 ): Serde<T, any[]> {
   return {
-    serialize: (value) => serdes.map((serde, i) => serde.serialize(value[i])),
+    serialize: (value) => {
+      const result: any[] = [];
+      for (let i = 0; i < serdes.length; i++) {
+        const itemResult = serdes[i]!.serialize(value[i]);
+        if (itemResult.isErr()) {
+          return Err(`Tuple item at index ${i}: ${itemResult.error}`);
+        }
+        result.push(itemResult.value);
+      }
+      return Ok(result);
+    },
     deserialize: (serialized) => {
       if (!Array.isArray(serialized)) {
         return Err("Expected array for tuple");
@@ -96,8 +120,11 @@ export function createUnionSerde<T extends Record<string, any>>(
   return {
     serialize: (value) => {
       const tag = tagExtractor(value);
-      const serialized = variants[tag]!.serialize(value);
-      return { [tagField]: tag, ...serialized };
+      const serializedResult = variants[tag]!.serialize(value);
+      if (serializedResult.isErr()) {
+        return Err(`Union variant '${String(tag)}': ${serializedResult.error}`);
+      }
+      return Ok({ [tagField]: tag, ...serializedResult.value });
     },
     deserialize: (serialized) => {
       if (
@@ -127,9 +154,13 @@ export function createRecordSerde<T>(
     serialize: (value) => {
       const result: Record<string, any> = {};
       for (const key in value) {
-        result[key] = valueSerde.serialize(value[key]!);
+        const valueResult = valueSerde.serialize(value[key]!);
+        if (valueResult.isErr()) {
+          return Err(`Record key '${key}': ${valueResult.error}`);
+        }
+        result[key] = valueResult.value;
       }
-      return result;
+      return Ok(result);
     },
     deserialize: (serialized) => {
       if (

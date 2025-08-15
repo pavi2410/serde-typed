@@ -10,7 +10,6 @@ import {
 } from "@/serializers/complex.js";
 import {
   createDefaultSerde,
-  createLazySerde,
   createMappedSerde,
   createNullableSerde,
   createOptionalSerde,
@@ -92,10 +91,6 @@ export const mapped = <T, K extends keyof T>(
   mapping: Record<string, K>,
 ): Serde<T, Record<string, unknown>> =>
   createMappedSerde(serde, mapping) as Serde<T, Record<string, unknown>>;
-
-export const lazy = <T>(
-  getSerdeFactory: () => Serde<T, unknown>,
-): Serde<T, unknown> => createLazySerde(getSerdeFactory) as Serde<T, unknown>;
 
 export const rename = <T, K extends keyof T>(
   serde: Serde<T, unknown>,

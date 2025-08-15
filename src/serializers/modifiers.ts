@@ -5,8 +5,10 @@ export function createOptionalSerde<T>(
   serde: Serde<T, any>,
 ): Serde<T | undefined, any> {
   return {
-    serialize: (value) =>
-      value === undefined ? undefined : serde.serialize(value),
+    serialize: (value) => {
+      if (value === undefined) return Ok(undefined);
+      return serde.serialize(value);
+    },
     deserialize: (serialized) => {
       if (serialized === undefined) return Ok(undefined);
       return serde.deserialize(serialized);
@@ -18,7 +20,10 @@ export function createNullableSerde<T>(
   serde: Serde<T, any>,
 ): Serde<T | null, any> {
   return {
-    serialize: (value) => (value === null ? null : serde.serialize(value)),
+    serialize: (value) => {
+      if (value === null) return Ok(null);
+      return serde.serialize(value);
+    },
     deserialize: (serialized) => {
       if (serialized === null) return Ok(null);
       return serde.deserialize(serialized);
@@ -31,7 +36,7 @@ export function createDefaultSerde<T>(
   defaultValue: T,
 ): Serde<T, any> {
   return {
-    serialize: serde.serialize,
+    serialize: (value) => serde.serialize(value),
     deserialize: (serialized) => {
       if (serialized === undefined) return Ok(defaultValue);
       return serde.deserialize(serialized);
@@ -45,12 +50,16 @@ export function createMappedSerde<T, K extends keyof T>(
 ): Serde<T, Record<string, any>> {
   return {
     serialize: (value) => {
-      const serialized = serde.serialize(value);
+      const serializedResult = serde.serialize(value);
+      if (serializedResult.isErr()) {
+        return serializedResult;
+      }
+      const serialized = serializedResult.value;
       const result: Record<string, any> = {};
       for (const [externalKey, internalKey] of Object.entries(mapping)) {
         result[externalKey] = serialized[internalKey];
       }
-      return result;
+      return Ok(result);
     },
     deserialize: (serialized) => {
       if (
@@ -73,31 +82,17 @@ export function createMappedSerde<T, K extends keyof T>(
   };
 }
 
-export function createLazySerde<T>(
-  getSerdeFactory: () => Serde<T, any>,
-): Serde<T, any> {
-  let serde: Serde<T, any> | undefined;
-
-  const getSerde = () => {
-    if (!serde) {
-      serde = getSerdeFactory();
-    }
-    return serde;
-  };
-
-  return {
-    serialize: (value) => getSerde().serialize(value),
-    deserialize: (serialized) => getSerde().deserialize(serialized),
-  };
-}
-
 export function createRenameSerde<T, K extends keyof T>(
   serde: Serde<T, any>,
   fieldMapping: Partial<Record<K, string>>,
 ): Serde<T, any> {
   return {
     serialize: (value) => {
-      const serialized = serde.serialize(value);
+      const serializedResult = serde.serialize(value);
+      if (serializedResult.isErr()) {
+        return serializedResult;
+      }
+      const serialized = serializedResult.value;
       const result: Record<string, any> = {};
 
       for (const key in serialized) {
@@ -105,7 +100,7 @@ export function createRenameSerde<T, K extends keyof T>(
         result[mappedKey] = serialized[key];
       }
 
-      return result;
+      return Ok(result);
     },
     deserialize: (serialized) => {
       if (

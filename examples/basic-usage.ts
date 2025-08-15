@@ -2,14 +2,28 @@ import { Err, Ok } from "@rustify/result";
 import * as t from "../src/index.js";
 import { createTransformSerde } from "../src/serializers/primitives.js";
 
-// Basic primitive serialization
+// Basic primitive serialization (all return Result<S, string>)
 console.log("=== Basic Primitives ===");
-console.log(t.string.serialize("hello"));
-console.log(t.number.serialize(42));
-console.log(t.boolean.serialize(true));
+const stringSerializeResult = t.string.serialize("hello");
+if (stringSerializeResult.isOk()) {
+  console.log(stringSerializeResult.value);
+}
+
+const numberSerializeResult = t.number.serialize(42);
+if (numberSerializeResult.isOk()) {
+  console.log(numberSerializeResult.value);
+}
+
+const booleanResult = t.boolean.serialize(true);
+if (booleanResult.isOk()) {
+  console.log(booleanResult.value);
+}
 
 const date = new Date("2023-01-01T00:00:00.000Z");
-console.log(t.date.serialize(date));
+const dateResult = t.date.serialize(date);
+if (dateResult.isOk()) {
+  console.log(dateResult.value);
+}
 
 // Object serialization
 console.log("\n=== Object ===");
@@ -20,22 +34,32 @@ const PersonSerde = t.object({
 });
 
 const person = { name: "Alice", age: 30, active: true };
-const serializedPerson = PersonSerde.serialize(person);
-console.log(serializedPerson);
+const serializedPersonResult = PersonSerde.serialize(person);
+if (serializedPersonResult.isOk()) {
+  console.log(serializedPersonResult.value);
 
-const deserializedPerson = PersonSerde.deserialize(serializedPerson);
-if (deserializedPerson.isOk()) {
-  console.log(deserializedPerson.value);
+  const deserializedPerson = PersonSerde.deserialize(
+    serializedPersonResult.value,
+  );
+  if (deserializedPerson.isOk()) {
+    console.log(deserializedPerson.value);
+  } else {
+    console.error("Deserialization failed:", deserializedPerson.error);
+  }
 } else {
-  console.error("Deserialization failed:", deserializedPerson.error);
+  console.error("Serialization failed:", serializedPersonResult.error);
 }
 
 // Array serialization
 console.log("\n=== Array ===");
 const NumberArraySerde = t.array(t.number);
 const numbers = [1, 2, 3, 4, 5];
-const serializedNumbers = NumberArraySerde.serialize(numbers);
-console.log(serializedNumbers);
+const serializedNumbersResult = NumberArraySerde.serialize(numbers);
+if (serializedNumbersResult.isOk()) {
+  console.log(serializedNumbersResult.value);
+} else {
+  console.error("Array serialization failed:", serializedNumbersResult.error);
+}
 
 // Optional fields
 console.log("\n=== Optional ===");
@@ -48,8 +72,15 @@ const UserSerde = t.object({
 const user1 = { name: "Bob", email: "bob@example.com", age: 25 };
 const user2 = { name: "Charlie", email: undefined, age: null };
 
-console.log(UserSerde.serialize(user1));
-console.log(UserSerde.serialize(user2));
+const user1Result = UserSerde.serialize(user1);
+if (user1Result.isOk()) {
+  console.log(user1Result.value);
+}
+
+const user2Result = UserSerde.serialize(user2);
+if (user2Result.isOk()) {
+  console.log(user2Result.value);
+}
 
 // Custom transformation: Boolean to "True"/"False" strings
 console.log("\n=== Custom Boolean Transform ===");
@@ -60,8 +91,15 @@ const BooleanString = createTransformSerde(
   (serialized: string) => Ok(serialized === "True"),
 );
 
-console.log(BooleanString.serialize(true)); // "True"
-console.log(BooleanString.serialize(false)); // "False"
+const boolTrueResult = BooleanString.serialize(true);
+if (boolTrueResult.isOk()) {
+  console.log(boolTrueResult.value); // "True"
+}
+
+const boolFalseResult = BooleanString.serialize(false);
+if (boolFalseResult.isOk()) {
+  console.log(boolFalseResult.value); // "False"
+}
 const result1 = BooleanString.deserialize("True");
 const result2 = BooleanString.deserialize("False");
 console.log(result1.isOk() ? result1.value : result1.error); // true
@@ -88,29 +126,34 @@ console.log(invalidResult); // Err with error message
 
 // Using .unwrap() for throwing behavior when needed
 try {
+  // First try serialization with .unwrap()
+  const serializedTrue = BooleanString2.serialize(true).unwrap();
+  console.log("Serialized true:", serializedTrue);
+
+  // Then deserialization that will fail
   const throwingResult = BooleanString2.deserialize("Invalid").unwrap();
   console.log(throwingResult);
 } catch (error) {
-  console.log("Caught error:", error.message);
+  console.log("Caught error:", (error as Error).message);
 }
 
 // Working with Result values
 console.log("\n=== Working with Results ===");
-const stringResult = t.string.deserialize("hello");
-if (stringResult.isOk()) {
-  console.log("String value:", stringResult.value);
+const stringDeserializeResult = t.string.deserialize("hello");
+if (stringDeserializeResult.isOk()) {
+  console.log("String value:", stringDeserializeResult.value);
 }
 
-const numberResult = t.number.deserialize("not a number");
-if (numberResult.isErr()) {
-  console.log("Number error:", numberResult.error);
+const numberDeserializeResult = t.number.deserialize("not a number");
+if (numberDeserializeResult.isErr()) {
+  console.log("Number error:", numberDeserializeResult.error);
 }
 
 // Chain operations with Result
 const chainedResult = t.number
   .deserialize(42)
-  .map((n) => n * 2)
-  .map((n) => `The result is ${n}`);
+  .map((n: number) => n * 2)
+  .map((n: number) => `The result is ${n}`);
 
 if (chainedResult.isOk()) {
   console.log(chainedResult.value); // "The result is 84"
